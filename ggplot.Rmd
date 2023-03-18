@@ -1,0 +1,82 @@
+---
+title: "bringiton"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+blood <- read.csv("blood.csv")
+blood$Prevalence.of.raised.blood.pressure <- blood$Prevalence.of.raised.blood.pressure*100
+blood$Country.Region.World <- as.factor(blood$Country.Region.World)
+blood$Prevalence.of.raised.blood.pressure <- as.numeric(blood$Prevalence.of.raised.blood.pressure)
+blood <- blood[blood$Year == 2015, c("Country.Region.World","ISO", "Sex", "Year", "Prevalence.of.raised.blood.pressure")]
+blood1 <- as.data.frame.matrix(xtabs(Prevalence.of.raised.blood.pressure ~ Country.Region.World + Sex, blood))
+blood2<-data.frame(Country=unique(blood$Country.Region.World),blood1, blood,y=seq(from=0.2, to=40, by=0.2 ))
+blood2
+```
+
+
+```{r}
+source("region.R")
+blood2$Region <- sapply(blood2$Country.Region.World, grouping.region)
+blood2 <- blood2[-c(1:200), -c(4,5,6,8)]
+blood2
+```
+
+```{r}
+library(ggthemes)
+theme_blood <-
+   theme(
+    aspect.ratio = 5/5,
+    legend.text = element_text(size=12),
+    legend.position = c(-0.013, 1.02),
+    legend.justification = "left",
+    legend.direction = "horizontal",
+    legend.spacing = unit(c(0,0,0,-5), "line"),
+    legend.key.height = unit(0.3, "cm"),
+    legend.margin = margin(b=2, l=2, t=2),
+    plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), units="line"),
+    axis.text.y = element_text(color="black", size=8),
+    plot.title = element_text(size=14, hjust=0, vjust = 4, face="bold"),
+    plot.caption = element_text(hjust=0, vjust = 1),
+    plot.subtitle = element_text(size=12, hjust=0, vjust=4),
+    panel.border = element_rect(linetype = "solid", color = "grey", fill = NA),
+    panel.background = element_rect(fill = "white"),
+    panel.grid.major.x = element_line(colour = "#abbdc6"),
+    panel.grid.major.y = element_line(colour = "#abbdc6")
+
+  )
+
+
+```
+
+
+
+```{r fig.height=6.5}
+library(grid)
+grob = grobTree(textGrob("Women more likely \n to have high blood \n pressure \n", x=0.75, y=0.25, just = "centre", gp=gpar(col="#628495", fontsize=12)))
+grob1 = grobTree(textGrob("Men more likely \n to have high blood \n pressure \n", x=0.25, y=0.875, just = "centre", gp=gpar(col="#628495", fontsize=12)))
+
+library(ggplot2)
+library(ggrepel)
+label.blood2 <- c("South Korea", "United States", "Canada", "Britain", "Germany", "Nigeria", "Niger", "India", "Russia", "Croatia")
+
+pressure <- ggplot(blood2, aes(x=Women, y=Men,label=Country)) + 
+  geom_point(aes(color=Region), cex = 3) + 
+  geom_abline(intercept= 0, slope=1, linetype="dashed") + 
+  #geom_ribbon(aes(ymin=0, ymax=blood2$y, fill="black")) +
+  scale_x_continuous(name="Women", breaks=seq(0,40,by=10), limits=c(0,40), expand = c(0, 0)) + 
+  scale_y_continuous(name="Men", breaks=seq(0,40,by=10), limits=c(0,40), expand = c(0, 0)) + 
+  scale_color_manual(name = "", values = c("#f15b40", "#eca221", "#B0cbD2", "#00526D"), labels=c("Central and Eastern     Europe"="Central and Eastern Europe", "High-Income Western" = "High-Income Western", "Sub-Saharan Africa"="Sub Saharan Africa", "Others" = "Other")) + 
+  labs(title="Matters of the heart", subtitle="Prevalence of raised blood pressure*, by sex, 2015, %", caption = "Source: NCD Risk Factor Collaboration") + 
+  geom_text_repel(aes(label=Country), data = blood2[blood2$Country %in% label.blood2,]) 
+
+pressure + theme_blood + annotation_custom(grob1) + annotation_custom(grob) 
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
